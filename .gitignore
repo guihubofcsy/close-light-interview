@@ -1,0 +1,11 @@
+# 编译产物
+out/
+*.class
+
+# Python
+__pycache__/
+*.pyc
+
+# 编辑器
+.vscode/
+.idea/
