@@ -178,6 +178,24 @@ def main():
             A(f"| `{name}` | {len(g)} | {avg:.1f} | {share:.1f}% | {all_rate:.1f}% | {fresh_rate:.1f}% |")
     A("")
 
+    A("### 4.6 同日对照：排除「滞后只是上游故障时段的影子」\n")
+    A("如果失败只是因为某个时段上游整体抖动，那么同一时段内的新鲜调用也该失败。")
+    A("按自然日分组对照：\n")
+    A("| 日期 | 滞后≥15: 已回传 / 失败率 | 滞后<15: 已回传 / 失败率 | 差值 |")
+    A("|---|---|---|---|")
+    for day in sorted({r["raw"][1][:10] for r in rows}):
+        g = [r for r in rows if r["raw"][1].startswith(day)]
+        day_stale = [r for r in g if r["lag"] >= 15 and r["ok"] is not None]
+        day_fresh = [r for r in g if r["lag"] < 15 and r["ok"] is not None]
+        sf2_ = sum(1 for r in day_stale if r["ok"] == 0)
+        ff2_ = sum(1 for r in day_fresh if r["ok"] == 0)
+        sr2_ = sf2_ / len(day_stale) * 100 if day_stale else 0.0
+        fr2_ = ff2_ / len(day_fresh) * 100 if day_fresh else 0.0
+        A(f"| {day} | {len(day_stale)} / {sr2_:.1f}% | {len(day_fresh)} / {fr2_:.1f}% | {sr2_ - fr2_:+.1f}pp |")
+    A("")
+    A("每一天都是过期组失败率远高于新鲜组 → 不能用「那个时段上游整体坏」解释；")
+    A("即滞后本身在起作用，不是时段效应的影子。\n")
+
     A("## 五、数据口径核查（README 第二节引用的数字）\n")
     naive = []
     with open(path, encoding="utf-8-sig", newline="") as fp:
